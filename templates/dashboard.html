@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Logs</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- SocketIO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <!--Datavisualization-->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+<body>
+
+    <!-- Navbar -->
+    <div class="navbar">
+        <a href="/home">Home</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/logout">Logout</a>
+    </div>
+
+    <div class="container">
+        <h2>Risk Analytics - Event Logs by Evidence ID</h2>
+
+        <!-- Event Log Section -->
+        {% for evidence in evidences %}
+            <div class="event-log">
+                <h3>Evidence ID: {{ evidence['_id'] }}</h3>
+                <p><strong>Evidence:</strong> {{ evidence['image_filename'] }}</p>
+                <p><strong>Current Risk:</strong> {{ evidence['risk_prediction'] }}</p>
+                <p><strong>Variables:</strong> {{ evidence['variables'] }}</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        const socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        // Listen for real-time risk updates
+        socket.on('risk_update', function(data) {
+            console.log('Risk update received:', data);
+
+            // Show SweetAlert notification for risk change
+            Swal.fire({
+                title: 'Risk Status Changed!',
+                text: `Evidence ID: ${data.evidence_id}, New Risk: ${data.risk}`,
+                icon: 'warning',
+                confirmButtonText: 'Ok'
+            });
+        });
+    </script>
+    <script>
+        const ctx = document.getElementById('riskChart').getContext('2d');
+        const riskChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],  // Timestamps or updates go here
+                datasets: [{
+                    label: 'Temperature (°C)',
+                    data: [],  // Temperature values
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    fill: false,
+                }, {
+                    label: 'Humidity (%)',
+                    data: [],  // Humidity values
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    fill: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                title: {
+                    display: true,
+                    text: 'Temperature and Humidity Trends'
+                },
+                scales: {
+                    xAxes: [{ type: 'time', time: { unit: 'second' } }],
+                    yAxes: [{ ticks: { beginAtZero: true } }]
+                }
+            }
+        });
+    
+        // Listen for real-time risk updates and update the chart
+        socket.on('risk_update', function(data) {
+            const timestamp = new Date();
+            riskChart.data.labels.push(timestamp);
+            riskChart.data.datasets[0].data.push(data.variables.Temperature);
+            riskChart.data.datasets[1].data.push(data.variables.Humidity);
+            riskChart.update();
+        });
+    </script>
+    
+</body>
+</html>

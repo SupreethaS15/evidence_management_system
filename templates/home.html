@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evidence Form</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+
+    <div class="navbar">
+        <a href="/home">Home</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/logout">Logout</a>
+    </div>
+
+    <div class="container">
+        <h2>Submit Evidence</h2>
+
+        <!-- Form to upload evidence image -->
+        <form id="evidence-form" action="/home" method="POST" enctype="multipart/form-data">
+            <div>
+                <label for="evidence_image">Upload Evidence Image (Required for Prediction)</label>
+                <input type="file" name="evidence_image" id="evidence_image" required>
+            </div>
+
+            <!-- Show the predicted evidence type -->
+            <div id="prediction-result" style="display: none;">
+                <p>Predicted Evidence Type: <strong id="predicted_evidence"></strong></p>
+            </div>
+
+            <!-- Form fields with values predicted by the CNN -->
+            <div>
+                <label for="temperature">Temperature (°C):</label>
+                <input type="text" name="temperature" id="temperature" required>
+            </div>
+            <div>
+                <label for="humidity">Humidity (%):</label>
+                <input type="text" name="humidity" id="humidity" required>
+            </div>
+            <div>
+                <label for="vibration">Vibration (0/1):</label>
+                <input type="text" name="vibration" id="vibration" required>
+            </div>
+            <div>
+                <label for="light_intensity">Light Intensity (lx):</label>
+                <input type="text" name="light_intensity" id="light_intensity" required>
+            </div>
+            <div>
+                <label for="battery_level">Battery Level (%):</label>
+                <input type="text" name="battery_level" id="battery_level" required>
+            </div>
+
+            <button type="submit">Submit Evidence</button>
+        </form>
+    </div>
+
+    <!-- Script to automatically upload the image and fill form fields -->
+    <script>
+        $('#evidence_image').on('change', function () {
+            const formData = new FormData();
+            formData.append('evidence_image', this.files[0]);
+
+            $.ajax({
+                url: '/predict_evidence',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (data) {
+                    // Show prediction result and autofill form fields
+                    $('#prediction-result').show();
+                    $('#predicted_evidence').text(data.predicted_evidence);
+
+                    $('#temperature').val(data.variables.Temperature);
+                    $('#humidity').val(data.variables.Humidity);
+                    $('#vibration').val(data.variables.Vibration);
+                    $('#light_intensity').val(data.variables.Light_Intensity);
+                    $('#battery_level').val(data.variables.Battery_Level);
+                },
+                error: function (xhr, status, error) {
+                    alert('Error predicting evidence type');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
